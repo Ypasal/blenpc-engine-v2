@@ -3,28 +3,40 @@ import json
 import os
 import time
 import bpy
+import traceback
 
 # Add project root to path for imports
 project_root = os.path.dirname(os.path.abspath(__file__))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
+# Use absolute imports
 from atoms.wall import create_engineered_wall
 from engine.inventory_manager import InventoryManager
+from config import LIBRARY_DIR, REGISTRY_DIR, INVENTORY_FILE
 
 def run():
+    input_file = None
+    output_file = None
     try:
         if '--' in sys.argv:
             args = sys.argv[sys.argv.index('--') + 1:]
-            input_file = args[0]
-            output_file = args[1]
+            if len(args) == 2:
+                input_file = args[0]
+                output_file = args[1]
+            else:
+                raise ValueError("Incorrect number of arguments after --")
         else:
-            sys.exit(1)
-    except (ValueError, IndexError):
+            raise ValueError("Missing -- separator for arguments")
+    except (ValueError, IndexError) as e:
+        result = {"status": "error", "message": f"CLI Argument Error: {e}. Usage: blender --background --python run_command.py -- <input.json> <output.json>"}
+        if output_file:
+            with open(output_file, 'w') as f:
+                json.dump(result, f, indent=2)
         sys.exit(1)
 
     if not os.path.exists(input_file):
-        result = {"status": "error", "message": "Input not found"}
+        result = {"status": "error", "message": f"Input file not found: {input_file}"}
     else:
         try:
             with open(input_file, 'r') as f:
@@ -47,30 +59,37 @@ def run():
                     "tags": wall_data.get("tags", ["arch_wall"]),
                     "dimensions": {"width": length, "height": 3.0, "depth": 0.2},
                     "slots": slots,
-                    "blend_file": f"_library/{name}.blend",
+                    "blend_file": os.path.join(LIBRARY_DIR, f"{name}.blend"),
                     "seed": seed
                 }
                 InventoryManager.register_asset(asset_info)
                 
                 # Save
-                if not os.path.exists("_library"): os.makedirs("_library")
-                lib_path = os.path.join("_library", f"{name}.blend")
+                os.makedirs(LIBRARY_DIR, exist_ok=True)
+                lib_path = os.path.join(LIBRARY_DIR, f"{name}.blend")
                 bpy.ops.wm.save_as_mainfile(filepath=lib_path)
                 
                 result = {
                     "status": "success",
                     "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "result": {"asset_name": name, "slots_count": len(slots)}
+                    "result": {"asset_name": name, "slots_count": len(slots), "blend_file": lib_path}
                 }
             else:
                 result = {"status": "error", "message": f"Unknown command: {cmd}"}
                 
         except Exception as e:
-            import traceback
-            result = {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+            result = {
+                "status": "error", 
+                "message": str(e),
+                "traceback": traceback.format_exc()
+            }
 
-    with open(output_file, 'w') as f:
-        json.dump(result, f, indent=2)
+    if output_file:
+        with open(output_file, 'w') as f:
+            json.dump(result, f, indent=2)
+    else:
+        # If output_file could not be determined, print error to stderr
+        print(json.dumps(result, indent=2), file=sys.stderr)
 
 if __name__ == "__main__":
     run()

@@ -2,6 +2,14 @@ import json
 import subprocess
 import os
 import pytest
+import sys
+
+# Add project root to path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from config import BLENDER_PATH, LIBRARY_DIR, REGISTRY_DIR
 
 def test_golden_ratio_wall_production():
     # Test two walls with different seeds to ensure deterministic but different slot placement
@@ -17,25 +25,29 @@ def test_golden_ratio_wall_production():
             }
         }
         
-        input_path = f"test_in_{seed}.json"
-        output_path = f"test_out_{seed}.json"
+        input_file = os.path.join(project_root, f"test_in_{seed}.json")
+        output_file = os.path.join(project_root, f"test_out_{seed}.json")
         
-        with open(input_path, "w") as f:
+        with open(input_file, "w") as f:
             json.dump(input_data, f)
             
-        subprocess.run([
-            "/home/ubuntu/blender5/blender",
-            "--background", "--python", "run_command.py",
-            "--", input_path, output_path
-        ], capture_output=True)
+        cmd = [
+            BLENDER_PATH,
+            "--background", "--python", os.path.join(project_root, "run_command.py"),
+            "--", input_file, output_file
+        ]
         
-        assert os.path.exists(output_path)
-        with open(output_path, "r") as f:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0
+        
+        assert os.path.exists(output_file)
+        with open(output_file, "r") as f:
             out = json.load(f)
             assert out["status"] == "success"
             
         # Verify Inventory Entry
-        with open("_registry/inventory.json", "r") as f:
+        inventory_path = os.path.join(REGISTRY_DIR, "inventory.json")
+        with open(inventory_path, "r") as f:
             inv = json.load(f)
             asset = inv["assets"][name]
             assert "slots" in asset
@@ -45,5 +57,7 @@ def test_golden_ratio_wall_production():
             assert pos_x % 0.25 == 0
             
         # Cleanup
-        os.remove(input_path)
-        os.remove(output_path)
+        if os.path.exists(input_file): os.remove(input_file)
+        if os.path.exists(output_file): os.remove(output_file)
+        if os.path.exists(os.path.join(LIBRARY_DIR, f"{name}.blend")): os.remove(os.path.join(LIBRARY_DIR, f"{name}.blend"))
+        if os.path.exists(os.path.join(REGISTRY_DIR, ".inventory.lock")): os.remove(os.path.join(REGISTRY_DIR, ".inventory.lock"))

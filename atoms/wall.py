@@ -3,6 +3,7 @@ import hashlib
 import struct
 import bpy
 import bmesh
+import json
 from typing import List, Tuple, Dict, Optional
 
 # Use absolute import from the project root
@@ -83,7 +84,7 @@ def create_engineered_wall(name: str, length: float, seed: int = 0):
     
     # Mark as asset and store metadata
     obj.asset_mark()
-    obj["slots_json"] = json.dumps(slots) if 'json' in globals() else str(slots)
+    obj["slots_json"] = json.dumps(slots)
     
     return obj, slots
 

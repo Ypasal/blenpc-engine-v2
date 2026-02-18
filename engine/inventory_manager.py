@@ -3,10 +3,8 @@ import os
 import time
 from typing import List, Dict, Optional
 
-# Use absolute import from the project root
-from config import INVENTORY_FILE
-
-LOCK_FILE = INVENTORY_FILE + ".lock"
+# Use absolute import from the project rootfrom config import INVENTORY_FILE, REGISTRY_DIR
+LOCK_FILE = os.path.join(REGISTRY_DIR, ".inventory.lock")
 
 class InventoryManager:
     @staticmethod
@@ -56,7 +54,7 @@ class InventoryManager:
             inventory["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
             
             # Ensure directory exists
-            os.makedirs(os.path.dirname(INVENTORY_FILE), exist_ok=True)
+            os.makedirs(REGISTRY_DIR, exist_ok=True)
             
             with open(INVENTORY_FILE, "w") as f:
                 json.dump(inventory, f, indent=2)

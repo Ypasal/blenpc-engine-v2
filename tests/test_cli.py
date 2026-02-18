@@ -1,7 +1,15 @@
 import json
+import sys
 import subprocess
 import os
 import pytest
+
+# Add project root to path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from config import BLENDER_PATH
 
 def test_cli_execution():
     input_data = {
@@ -14,7 +22,7 @@ def test_cli_execution():
         
     # Run via Blender headless
     cmd = [
-        "/home/ubuntu/blender5/blender",
+        BLENDER_PATH,
         "--background",
         "--python", "run_command.py",
         "--", "test_input.json", "test_output.json"

@@ -1,0 +1,1 @@
+{"command": "create_wall", "seed": 123, "asset": {"name": "MathWall_S123", "dimensions": {"width": 5.0}, "tags": ["arch_wall", "math_verified"]}}

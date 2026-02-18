@@ -1,4 +1,9 @@
+import os
+
 """Global configuration and architectural constants for MF v5.1."""
+
+# Project Root (determined dynamically)
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Architectural Units (ISO 2848 inspired)
 GRID_UNIT = 0.25  # Meters
@@ -19,13 +24,16 @@ MIN_ROOM_DIMENSION = 2.0  # Meters
 # Math Constants
 PHI = (1 + 5**0.5) / 2  # Golden Ratio
 
-# Paths
-LIBRARY_PATH = "_library/"
-REGISTRY_PATH = "_registry/"
-INVENTORY_FILE = REGISTRY_PATH + "inventory.json"
-SLOTS_FILE = REGISTRY_PATH + "slot_types.json"
-TAGS_FILE = REGISTRY_PATH + "tag_vocabulary.json"
+# Paths (relative to PROJECT_ROOT)
+LIBRARY_DIR = os.path.join(PROJECT_ROOT, "_library")
+REGISTRY_DIR = os.path.join(PROJECT_ROOT, "_registry")
+INVENTORY_FILE = os.path.join(REGISTRY_DIR, "inventory.json")
+SLOTS_FILE = os.path.join(REGISTRY_DIR, "slot_types.json")
+TAGS_FILE = os.path.join(REGISTRY_DIR, "tag_vocabulary.json")
 
 # Blender Commands
-BLENDER_PATH = "/home/ubuntu/blender5/blender"
+# IMPORTANT: This path needs to be configured for the specific OS and Blender installation.
+# For Windows, it might be something like 'C:\Program Files\Blender Foundation\Blender 5.0\blender.exe'
+# For Linux, it's currently set to the installed path.
+BLENDER_PATH = os.environ.get("BLENDER_EXECUTABLE", os.path.join(os.path.expanduser("~"), "blender5", "blender"))
 HEADLESS_ARGS = ["--background", "--python"]

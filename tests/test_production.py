@@ -2,6 +2,14 @@ import json
 import subprocess
 import os
 import pytest
+import sys
+
+# Add project root to path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from config import BLENDER_PATH, LIBRARY_DIR, REGISTRY_DIR
 
 def test_wall_production():
     input_data = {
@@ -13,32 +21,41 @@ def test_wall_production():
         }
     }
     
-    with open("prod_input.json", "w") as f:
+    input_file = os.path.join(project_root, "prod_input.json")
+    output_file = os.path.join(project_root, "prod_output.json")
+
+    with open(input_file, "w") as f:
         json.dump(input_data, f)
         
     cmd = [
-        "/home/ubuntu/blender5/blender",
+        BLENDER_PATH,
         "--background",
-        "--python", "run_command.py",
-        "--", "prod_input.json", "prod_output.json"
+        "--python", os.path.join(project_root, "run_command.py"),
+        "--", input_file, output_file
     ]
     
     result = subprocess.run(cmd, capture_output=True, text=True)
     
-    assert os.path.exists("prod_output.json")
-    with open("prod_output.json", "r") as f:
+    assert result.returncode == 0
+    
+    assert os.path.exists(output_file)
+    with open(output_file, "r") as f:
         output_data = json.load(f)
         assert output_data["status"] == "success"
         
     # Check if files were created
-    assert os.path.exists("_library/EngineeredWall_V1.blend")
+    blend_file_path = os.path.join(LIBRARY_DIR, "EngineeredWall_V1.blend")
+    assert os.path.exists(blend_file_path)
     
     # Check inventory
-    with open("_registry/inventory.json", "r") as f:
+    inventory_path = os.path.join(REGISTRY_DIR, "inventory.json")
+    with open(inventory_path, "r") as f:
         inventory = json.load(f)
         assert "EngineeredWall_V1" in inventory["assets"]
         assert "mat_concrete" in inventory["assets"]["EngineeredWall_V1"]["tags"]
 
     # Cleanup
-    if os.path.exists("prod_input.json"): os.remove("prod_input.json")
-    if os.path.exists("prod_output.json"): os.remove("prod_output.json")
+    if os.path.exists(input_file): os.remove(input_file)
+    if os.path.exists(output_file): os.remove(output_file)
+    if os.path.exists(blend_file_path): os.remove(blend_file_path)
+    if os.path.exists(os.path.join(REGISTRY_DIR, ".inventory.lock")): os.remove(os.path.join(REGISTRY_DIR, ".inventory.lock"))
