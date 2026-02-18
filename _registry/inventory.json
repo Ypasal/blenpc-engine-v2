@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-02-18T12:12:01",
+  "assets": {
+    "EngineeredWall_V1": {
+      "name": "EngineeredWall_V1",
+      "tags": [
+        "arch_wall",
+        "mat_concrete",
+        "style_modern"
+      ],
+      "dimensions": {
+        "width": 4.0,
+        "height": 3.0,
+        "depth": 0.2
+      },
+      "blend_file": "_library/EngineeredWall_V1.blend"
+    }
+  }
+}

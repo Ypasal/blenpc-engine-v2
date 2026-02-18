@@ -1,6 +1,18 @@
-# MF v5.1 Prosedürel Bina Üretim Motoru (Blender 5.0.1)
+# MF v5.1 Prosedürel Mimari Motoru (Blender 5.0.1)
 
-MF v5.1, Blender 4.3 ve Godot Engine için optimize edilmiş, deterministik ve modüler bir prosedürel bina üretim motorudur. BSP (Binary Space Partitioning) tabanlı kat planı algoritması ve segment tabanlı mesh üretim mimarisi ile oyun geliştirme süreçlerini hızlandırır.
+MF v5.1, Blender 5.0.1 ve Godot Engine için tasarlanmış, **mühendislik standartlarında** bir prosedürel varlık üretim ve yönetim sistemidir. Geleneksel mesh üretiminin ötesine geçerek, deterministik matematiksel kurallar, slot tabanlı yerleştirme ve JSON komut sistemi ile çalışır.
+
+## 🚀 Yeni Nesil Mimari
+Bu proje, aşağıdaki mühendislik prensipleri üzerine inşa edilmiştir:
+- **Deterministik RNG Zinciri:** Alt-sistem bazlı bağımsız seed yönetimi.
+- **Altın Oran (Golden Ratio):** Estetik ve işlevsel BSP bölünmeleri.
+- **Euler Manifold Kontrolü:** Matematiksel olarak doğrulanmış kusursuz geometri.
+- **Slot Sistemi:** Varlıklar arası akıllı bağlantı noktaları.
+
+## 📖 Dokümantasyon
+- [Dönüşüm Planı](docs/PLAN.md)
+- [Görev Takibi](docs/TODO.md)
+
 
 ## Özellikler
 

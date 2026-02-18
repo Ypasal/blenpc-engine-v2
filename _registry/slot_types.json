@@ -1,0 +1,20 @@
+{
+  "types": {
+    "window_opening": {
+      "description": "Standard wall opening for windows",
+      "required_tags": ["arch_window"]
+    },
+    "door_opening": {
+      "description": "Standard wall opening for doors",
+      "required_tags": ["arch_door"]
+    },
+    "wall_mount": {
+      "description": "Surface mount for paintings or lights",
+      "required_tags": ["prop_wall"]
+    },
+    "floor_mount": {
+      "description": "Placement point on floor for furniture",
+      "required_tags": ["furn_floor"]
+    }
+  }
+}

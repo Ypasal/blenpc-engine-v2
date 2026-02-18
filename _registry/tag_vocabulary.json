@@ -1,0 +1,14 @@
+{
+  "prefixes": {
+    "arch_": "Architectural elements (walls, floors, etc.)",
+    "furn_": "Furniture assets",
+    "prop_": "Decorative or functional props",
+    "mat_": "Material definitions",
+    "style_": "Visual style (modern, rustic, etc.)",
+    "color_": "Color variants",
+    "size_": "Dimension hints",
+    "slot_": "Connection point definitions",
+    "state_": "Object state (open, closed, broken)",
+    "loc_": "Placement location rules"
+  }
+}
