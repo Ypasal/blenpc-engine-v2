@@ -3,21 +3,28 @@ import os
 from typing import List, Dict, Optional, Tuple
 
 # Use absolute import from the project root
-from config import INVENTORY_FILE
+try:
+    from ..config import INVENTORY_FILE
+except (ImportError, ValueError):
+    from config import INVENTORY_FILE
 
 def get_aabb(obj) -> Dict[str, List[float]]:
     """Calculate Axis-Aligned Bounding Box for a Blender object."""
-    import numpy as np
-    # Local coordinates of the bounding box corners
-    bbox_corners = [obj.matrix_world @ np.array(v) for v in obj.bound_box]
-    bbox_corners = np.array(bbox_corners)
+    # Get world-space bounding box corners
+    bbox_corners = [obj.matrix_world @ v for v in obj.bound_box]
     
-    min_coords = bbox_corners.min(axis=0).tolist()
-    max_coords = bbox_corners.max(axis=0).tolist()
+    # Calculate min/max for each axis
+    min_x = min(v[0] for v in bbox_corners)
+    min_y = min(v[1] for v in bbox_corners)
+    min_z = min(v[2] for v in bbox_corners)
+    
+    max_x = max(v[0] for v in bbox_corners)
+    max_y = max(v[1] for v in bbox_corners)
+    max_z = max(v[2] for v in bbox_corners)
     
     return {
-        "min": min_coords,
-        "max": max_coords
+        "min": [min_x, min_y, min_z],
+        "max": [max_x, max_y, max_z]
     }
 
 def find_asset(tags: List[str]) -> Optional[Dict]:

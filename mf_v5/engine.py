@@ -52,13 +52,43 @@ class GenerationOutput:
     glb_path: Optional[str] = None
 
 
+def validate_building_spec(spec: BuildingSpec):
+    """Validate building specification before generation."""
+    errors = []
+    
+    if spec.width < 5:
+        errors.append(f"Width too small: {spec.width}m (minimum: 5m)")
+    if spec.width > 1000:
+        errors.append(f"Width too large: {spec.width}m (maximum: 1000m)")
+    
+    if spec.depth < 5:
+        errors.append(f"Depth too small: {spec.depth}m (minimum: 5m)")
+    if spec.depth > 1000:
+        errors.append(f"Depth too large: {spec.depth}m (maximum: 1000m)")
+    
+    if spec.floors < 1:
+        errors.append(f"Invalid floor count: {spec.floors} (minimum: 1)")
+    if spec.floors > 100:
+        errors.append(f"Too many floors: {spec.floors} (maximum: 100)")
+    
+    if spec.seed < 0:
+        errors.append(f"Invalid seed: {spec.seed} (must be non-negative)")
+    
+    if not isinstance(spec.roof_type, RoofType):
+        errors.append(f"Invalid roof type: {spec.roof_type}")
+    
+    if errors:
+        raise ConfigurationError("Invalid building specification:\n" + "\n".join(f"  - {e}" for e in errors))
+    
+    return True
+
+
 def generate(spec: BuildingSpec, output_dir: Path) -> GenerationOutput:
     """Procedurally generate a building based on spec."""
     start_time = time.time()
     logger.info(f"Starting generation: {spec.width}x{spec.depth}, {spec.floors} floors (Seed: {spec.seed})")
     
-    if spec.width < 5 or spec.depth < 5:
-        raise ConfigurationError(f"Building dimensions too small: {spec.width}x{spec.depth}")
+    validate_building_spec(spec)
 
     floor_outputs: List[FloorOutput] = []
     top_footprint = None

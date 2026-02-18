@@ -1,6 +1,23 @@
 import os
+import platform
+import logging
 
 """Global configuration and architectural constants for MF v5.1."""
+
+# Configure logging
+LOG_LEVEL = os.getenv("MF_LOG_LEVEL", "INFO")
+LOG_FILE = os.getenv("MF_LOG_FILE", None)
+
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_FILE) if LOG_FILE else logging.NullHandler()
+    ]
+)
+
+logger = logging.getLogger("blenpc")
 
 # Project Root (determined dynamically)
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -32,8 +49,29 @@ SLOTS_FILE = os.path.join(REGISTRY_DIR, "slot_types.json")
 TAGS_FILE = os.path.join(REGISTRY_DIR, "tag_vocabulary.json")
 
 # Blender Commands
-# IMPORTANT: This path needs to be configured for the specific OS and Blender installation.
-# For Windows, it might be something like 'C:\Program Files\Blender Foundation\Blender 5.0\blender.exe'
-# For Linux, it's currently set to the installed path.
-BLENDER_PATH = os.environ.get("BLENDER_EXECUTABLE", os.path.join(os.path.expanduser("~"), "blender5", "blender"))
+def get_blender_path():
+    env_path = os.getenv("BLENDER_PATH") or os.getenv("BLENDER_EXECUTABLE")
+    if env_path and os.path.exists(env_path):
+        return env_path
+    
+    if platform.system() == "Windows":
+        return r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+    elif platform.system() == "Darwin":
+        return "/Applications/Blender.app/Contents/MacOS/Blender"
+    else:
+        # Default for linux/sandbox
+        return "/usr/bin/blender"
+
+BLENDER_PATH = get_blender_path()
 HEADLESS_ARGS = ["--background", "--python"]
+
+# Slot Generation Constants
+GOLDEN_RATIO_VARIATION = 0.04  # +/- 4% variation
+WINDOW_SILL_HEIGHT_DEFAULT = 1.2  # meters
+WINDOW_DEFAULT_WIDTH = 1.0  # meters
+WINDOW_DEFAULT_HEIGHT = 1.2  # meters
+
+# Inventory Locking Constants
+INVENTORY_LOCK_TIMEOUT = 5  # seconds
+INVENTORY_LOCK_POLL_INTERVAL = 0.1  # seconds
+INVENTORY_LOCK_STALE_AGE = 60  # seconds

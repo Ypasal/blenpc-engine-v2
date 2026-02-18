@@ -12,7 +12,8 @@ Bu proje, aşağıdaki mühendislik prensipleri üzerine inşa edilmiştir:
 ## 📖 Dokümantasyon
 - [Dönüşüm Planı](docs/PLAN.md)
 - [Görev Takibi](docs/TODO.md)
-
+- [API Referansı](API_REFERENCE.md)
+- [Değişiklik Günlüğü](CHANGELOG.md)
 
 ## Özellikler
 
@@ -29,6 +30,41 @@ Bu proje, aşağıdaki mühendislik prensipleri üzerine inşa edilmiştir:
    ```bash
    pip install -r requirements.txt
    ```
+
+## CLI Kullanımı (Ana Arayüz)
+
+### Duvar Asset'i Oluşturma
+
+1. Input JSON oluştur (`input.json`):
+```json
+{
+  "command": "create_wall",
+  "seed": 12345,
+  "asset": {
+    "name": "BenimDuvarim",
+    "dimensions": {"width": 6.0},
+    "tags": ["arch_wall", "style_modern"]
+  }
+}
+```
+
+2. Blender üzerinden çalıştır:
+```bash
+blender --background --python run_command.py -- input.json output.json
+```
+
+3. Çıktıyı kontrol et (`output.json`):
+```json
+{
+  "status": "success",
+  "timestamp": "2026-02-18T13:21:08",
+  "result": {
+    "asset_name": "BenimDuvarim",
+    "slots_count": 1,
+    "blend_file": "_library/BenimDuvarim.blend"
+  }
+}
+```
 
 ## Kullanım Örneği (API)
 
@@ -63,7 +99,7 @@ print(f"Kat planı detayları: {result.floors}")
 
 Sistem, hataları yakalamak için özel istisnalar (`exceptions.py`) ve detaylı bir logging mekanizması kullanır.
 
-- **Debug Modu:** `MF_DEBUG=1` ortam değişkenini ayarlayarak detaylı üretim loglarını görebilirsiniz.
+- **Debug Modu:** `MF_LOG_LEVEL=DEBUG` ortam değişkenini ayarlayarak detaylı üretim loglarını görebilirsiniz.
 - **Exceptions:** `GenerationError`, `GeometryError`, `ExportError` gibi spesifik hata tipleri ile süreçleri kontrol edebilirsiniz.
 
 ## Testler
@@ -76,7 +112,11 @@ pytest tests/
 ## Klasör Yapısı
 
 - `mf_v5/`: Ana motor modülleri.
+- `atoms/`: Temel yapı taşları (Duvarlar vb.).
+- `engine/`: Varlık yönetimi ve slot motoru.
 - `tests/`: Kapsamlı unit testleri.
+- `_library/`: Üretilen Blender dosyaları.
+- `_registry/`: Varlık envanteri ve kayıtları.
 - `output/`: Üretilen GLB ve manifest dosyaları.
 - `requirements.txt`: Bağımlılık listesi.
 

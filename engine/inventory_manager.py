@@ -3,18 +3,40 @@ import os
 import time
 from typing import List, Dict, Optional
 
-# Use absolute import from the project rootfrom config import INVENTORY_FILE, REGISTRY_DIR
+# Use absolute import from the project root
+try:
+    from ..config import (
+        INVENTORY_FILE, REGISTRY_DIR,
+        INVENTORY_LOCK_TIMEOUT, INVENTORY_LOCK_POLL_INTERVAL, INVENTORY_LOCK_STALE_AGE
+    )
+except (ImportError, ValueError):
+    from config import (
+        INVENTORY_FILE, REGISTRY_DIR,
+        INVENTORY_LOCK_TIMEOUT, INVENTORY_LOCK_POLL_INTERVAL, INVENTORY_LOCK_STALE_AGE
+    )
+    
 LOCK_FILE = os.path.join(REGISTRY_DIR, ".inventory.lock")
 
 class InventoryManager:
     @staticmethod
-    def acquire_lock(timeout=5):
+    def acquire_lock(timeout=INVENTORY_LOCK_TIMEOUT):
         """Acquire a simple file lock for inventory operations."""
         start_time = time.time()
         while os.path.exists(LOCK_FILE):
+            # CHECK IF LOCK IS STALE
+            if os.path.exists(LOCK_FILE):
+                lock_age = time.time() - os.path.getmtime(LOCK_FILE)
+                if lock_age > INVENTORY_LOCK_STALE_AGE:
+                    # Stale lock, remove it
+                    try:
+                        os.remove(LOCK_FILE)
+                    except:
+                        pass
+            
             if time.time() - start_time > timeout:
                 raise TimeoutError("Could not acquire inventory lock")
-            time.sleep(0.1)
+            time.sleep(INVENTORY_LOCK_POLL_INTERVAL)
+        
         with open(LOCK_FILE, "w") as f:
             f.write(str(os.getpid()))
 
@@ -22,7 +44,10 @@ class InventoryManager:
     def release_lock():
         """Release the inventory file lock."""
         if os.path.exists(LOCK_FILE):
-            os.remove(LOCK_FILE)
+            try:
+                os.remove(LOCK_FILE)
+            except:
+                pass
 
     @staticmethod
     def find_asset(tags: List[str]) -> Optional[Dict]:

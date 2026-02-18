@@ -1,13 +1,30 @@
 import math
 import hashlib
 import struct
-import bpy
-import bmesh
 import json
+import os
+try:
+    import bpy
+    import bmesh
+except ImportError:
+    bpy = None
+    bmesh = None
+    
 from typing import List, Tuple, Dict, Optional
 
 # Use absolute import from the project root
-from config import PHI, STORY_HEIGHT, WALL_THICKNESS_BASE, GRID_UNIT
+try:
+    from ..config import (
+        PHI, STORY_HEIGHT, WALL_THICKNESS_BASE, GRID_UNIT,
+        GOLDEN_RATIO_VARIATION, WINDOW_SILL_HEIGHT_DEFAULT,
+        WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT
+    )
+except (ImportError, ValueError):
+    from config import (
+        PHI, STORY_HEIGHT, WALL_THICKNESS_BASE, GRID_UNIT,
+        GOLDEN_RATIO_VARIATION, WINDOW_SILL_HEIGHT_DEFAULT,
+        WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT
+    )
 
 def make_rng(seed: int, subsystem: str):
     """Create a deterministic RNG for a specific subsystem."""
@@ -20,8 +37,8 @@ def golden_split(length: float, rng) -> float:
     """Split a length using the Golden Ratio with slight deterministic variation."""
     # Standard split at 1/PHI or (1 - 1/PHI)
     split_point = length / PHI
-    # Add +/- 2% variation based on RNG to avoid perfect repetition while maintaining aesthetics
-    variation = (rng.random() - 0.5) * 0.04 * length
+    # Add variation based on RNG to avoid perfect repetition while maintaining aesthetics
+    variation = (rng.random() - 0.5) * GOLDEN_RATIO_VARIATION * length
     final_split = split_point + variation
     
     # Snap to GRID_UNIT for modularity
@@ -29,14 +46,46 @@ def golden_split(length: float, rng) -> float:
 
 def check_manifold(bm) -> bool:
     """Verify if the mesh is a manifold using Euler's Formula: V - E + F = 2."""
+    if not bm: return False
     v = len(bm.verts)
     e = len(bm.edges)
     f = len(bm.faces)
     # Simple check for closed genus-0 mesh
     return (v - e + f) == 2
 
+def validate_slot(slot: Dict, slot_types_file: str = "_registry/slot_types.json") -> bool:
+    """Validate slot data against registry schema."""
+    if not os.path.exists(slot_types_file):
+        return True  # Skip validation if registry doesn't exist
+    
+    with open(slot_types_file, 'r') as f:
+        slot_types = json.load(f)
+    
+    slot_type = slot.get("type")
+    if slot_type not in slot_types.get("types", {}):
+        raise ValueError(f"Unknown slot type: {slot_type}")
+    
+    # Validate required fields
+    required_fields = ["id", "type", "pos", "size"]
+    for field in required_fields:
+        if field not in slot:
+            raise ValueError(f"Missing required field '{field}' in slot")
+    
+    # Validate pos is 3D coordinate
+    if not isinstance(slot["pos"], list) or len(slot["pos"]) != 3:
+        raise ValueError(f"Slot 'pos' must be [x, y, z] list")
+    
+    # Validate size is 2D
+    if not isinstance(slot["size"], list) or len(slot["size"]) != 2:
+        raise ValueError(f"Slot 'size' must be [width, height] list")
+    
+    return True
+
 def create_engineered_wall(name: str, length: float, seed: int = 0):
     """Create a wall with mathematically placed slots for openings."""
+    if not bpy:
+        raise ImportError("Blender 'bpy' module is required for this function.")
+        
     rng = make_rng(seed, "wall_slots")
     
     # Clear existing data
@@ -77,10 +126,14 @@ def create_engineered_wall(name: str, length: float, seed: int = 0):
         {
             "id": "main_opening",
             "type": "window_opening",
-            "pos": [primary_slot_x, 0, 1.2], # 1.2m height standard
-            "size": [1.0, 1.2]
+            "pos": [primary_slot_x, 0, WINDOW_SILL_HEIGHT_DEFAULT],
+            "size": [WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT]
         }
     ]
+    
+    # Validate slots
+    for slot in slots:
+        validate_slot(slot)
     
     # Mark as asset and store metadata
     obj.asset_mark()

@@ -42,13 +42,25 @@ def run():
             with open(input_file, 'r') as f:
                 command_data = json.load(f)
             
+            # VALIDATE STRUCTURE
+            if "command" not in command_data:
+                raise ValueError("Missing 'command' field in input JSON")
+            
             cmd = command_data.get("command")
             seed = command_data.get("seed", 0)
             
             if cmd == "create_wall":
                 wall_data = command_data.get("asset", {})
+                if not wall_data:
+                    raise ValueError("Missing 'asset' field for create_wall command")
+                
                 name = wall_data.get("name", "GenWall")
-                length = wall_data.get("dimensions", {}).get("width", 4.0)
+                dimensions = wall_data.get("dimensions", {})
+                length = dimensions.get("width", 4.0)
+                
+                # VALIDATE DIMENSIONS
+                if length <= 0 or length > 100:
+                    raise ValueError(f"Invalid wall length: {length}. Must be between 0 and 100 meters")
                 
                 # Create engineered mesh with slots
                 obj, slots = create_engineered_wall(name, length, seed)
@@ -77,10 +89,17 @@ def run():
             else:
                 result = {"status": "error", "message": f"Unknown command: {cmd}"}
                 
+        except json.JSONDecodeError as e:
+            result = {"status": "error", "message": f"Invalid JSON: {e}"}
+        except ValueError as e:
+            result = {"status": "error", "message": f"Validation error: {e}"}
+        except IOError as e:
+            result = {"status": "error", "message": f"File I/O error: {e}"}
         except Exception as e:
             result = {
-                "status": "error", 
+                "status": "error",
                 "message": str(e),
+                "type": type(e).__name__,
                 "traceback": traceback.format_exc()
             }
 
