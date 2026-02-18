@@ -1,4 +1,4 @@
-"""Blender-specific mesh generation and bmesh operations for Blender 3.0.1."""
+"""Blender-specific mesh generation and bmesh operations for Blender 4.3."""
 
 import bpy
 import bmesh
@@ -15,7 +15,6 @@ def create_wall_mesh(segments: Iterable[WallSegment], name: str = "Walls"):
     bm = bmesh.new()
     for s in segments:
         half_t = s.thickness / 2
-        # Calculate direction vector
         dx = s.x2 - s.x1
         dy = s.y2 - s.y1
         length = (dx**2 + dy**2)**0.5
@@ -23,11 +22,9 @@ def create_wall_mesh(segments: Iterable[WallSegment], name: str = "Walls"):
         
         ux = dx / length
         uy = dy / length
-        # Normal vector
         nx = -uy
         ny = ux
         
-        # 8 vertices for the wall box
         v = []
         for z in [0, s.height]:
             v.append(bm.verts.new((s.x1 + nx * half_t, s.y1 + ny * half_t, z)))
@@ -35,7 +32,6 @@ def create_wall_mesh(segments: Iterable[WallSegment], name: str = "Walls"):
             v.append(bm.verts.new((s.x2 - nx * half_t, s.y2 - ny * half_t, z)))
             v.append(bm.verts.new((s.x1 - nx * half_t, s.y1 - ny * half_t, z)))
             
-        # 6 faces
         try:
             bm.faces.new(v[0:4]) # bottom
             bm.faces.new(v[4:8]) # top
@@ -99,7 +95,6 @@ def create_roof_mesh(roof_geo: RoofGeometry, name: str = "Roof"):
 def final_merge_and_cleanup(objects: List[bpy.types.Object], merge_distance: float = 0.0005):
     if not objects: return None
     
-    # Select all objects to join
     bpy.ops.object.select_all(action='DESELECT')
     valid_objs = [o for o in objects if o.type == 'MESH']
     if not valid_objs: return None
@@ -107,13 +102,13 @@ def final_merge_and_cleanup(objects: List[bpy.types.Object], merge_distance: flo
     for obj in valid_objs:
         obj.select_set(True)
     
+    # In Blender 4.x, view_layer.objects.active is the way to set active object
     bpy.context.view_layer.objects.active = valid_objs[0]
     bpy.ops.object.join()
     
     merged_obj = bpy.context.active_object
     merged_obj.name = "Building_Final"
     
-    # Bmesh cleanup
     bm = bmesh.new()
     bm.from_mesh(merged_obj.data)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_distance)

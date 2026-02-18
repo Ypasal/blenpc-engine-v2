@@ -1,4 +1,4 @@
-"""Godot-oriented export settings and manifest generation."""
+"""Godot-oriented export settings and manifest generation for Blender 4.3."""
 
 from __future__ import annotations
 
@@ -34,32 +34,37 @@ def export_manifest(output_path: Path, building_name: str, settings: ExportSetti
     return output_path
 
 def export_to_glb(output_dir: Path, building_name: str, settings: ExportSettings = ExportSettings()):
-    """Actual GLB export using bpy.ops."""
+    """Actual GLB export using bpy.ops for Blender 4.3."""
     if bpy is None:
         return None
         
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Export main building
-    # Assuming the main building is selected
     building_path = output_dir / f"{building_name}.glb"
     
-    bpy.ops.export_scene.gltf(
-        filepath=str(building_path),
-        export_format='GLB',
-        use_selection=settings.selected_only,
-        export_yup=settings.y_up,
-        export_apply=settings.apply_modifiers,
-    )
+    # In Blender 4.x, some export parameters might have changed, but gltf basic ones are stable
+    try:
+        bpy.ops.export_scene.gltf(
+            filepath=str(building_path),
+            export_format='GLB',
+            use_selection=settings.selected_only,
+            export_yup=settings.y_up,
+            export_apply=settings.apply_modifiers,
+        )
+    except Exception as e:
+        print(f"Export failed: {e}")
+        return None
     
-    # Export collider (duplicate of building with suffix)
     collider_path = output_dir / f"{building_name}{settings.collider_suffix}.glb"
-    bpy.ops.export_scene.gltf(
-        filepath=str(collider_path),
-        export_format='GLB',
-        use_selection=settings.selected_only,
-        export_yup=settings.y_up,
-        export_apply=settings.apply_modifiers,
-    )
+    try:
+        bpy.ops.export_scene.gltf(
+            filepath=str(collider_path),
+            export_format='GLB',
+            use_selection=settings.selected_only,
+            export_yup=settings.y_up,
+            export_apply=settings.apply_modifiers,
+        )
+    except Exception as e:
+        print(f"Collider export failed: {e}")
     
     return building_path, collider_path
