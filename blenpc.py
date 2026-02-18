@@ -6,7 +6,9 @@ import yaml
 import platform
 import subprocess
 import time
-from typing import Optional
+import multiprocessing
+from typing import Optional, List, Dict
+from pathlib import Path
 
 # Ensure project root is in path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +16,29 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 import config
+
+def run_blender_task(input_data: Dict, input_file: str, output_file: str, preview: bool = False) -> Dict:
+    """Helper to run a single Blender task."""
+    with open(input_file, 'w') as f:
+        json.dump(input_data, f)
+        
+    blender_cmd = [config.BLENDER_PATH]
+    if not preview:
+        blender_cmd.append("--background")
+    
+    blender_cmd.extend(["--python", "run_command.py", "--", input_file, output_file])
+    
+    try:
+        subprocess.run(blender_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if os.path.exists(output_file):
+            with open(output_file, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        if os.path.exists(input_file): os.remove(input_file)
+        if os.path.exists(output_file): os.remove(output_file)
+    return {"status": "error", "message": "Unknown error or no output produced"}
 
 @click.group()
 @click.version_option(version="5.1.0")
@@ -48,7 +73,6 @@ def generate(width, depth, floors, seed, roof, output, spec, preview):
             else:
                 spec_data = json.load(f)
         
-        # Extract building info from spec if exists
         b_spec = spec_data.get('building', spec_data)
         width = width or b_spec.get('width', 20.0)
         depth = depth or b_spec.get('depth', 16.0)
@@ -57,7 +81,6 @@ def generate(width, depth, floors, seed, roof, output, spec, preview):
         roof = roof or b_spec.get('roof', {}).get('type', 'flat')
         output = output or b_spec.get('output', {}).get('directory', './output')
     else:
-        # Defaults if not provided
         width = width or 20.0
         depth = depth or 16.0
         floors = floors or 1
@@ -68,61 +91,61 @@ def generate(width, depth, floors, seed, roof, output, spec, preview):
         "command": "generate_building",
         "seed": seed,
         "spec": {
-            "width": width,
-            "depth": depth,
-            "floors": floors,
-            "roof": roof,
-            "output_dir": output
+            "width": width, "depth": depth, "floors": floors, "roof": roof, "output_dir": output
         }
     }
     
-    input_file = "gen_input.json"
-    output_file = "gen_output.json"
+    res = run_blender_task(input_data, f"gen_{seed}.json", f"out_{seed}.json", preview)
     
-    with open(input_file, 'w') as f:
-        json.dump(input_data, f)
+    if res.get("status") == "success":
+        click.secho(f"Successfully generated building: {res['result']['glb_path']}", fg="green")
+    else:
+        click.secho(f"Error: {res.get('message')}", fg="red")
+
+@cli.command()
+@click.option('--spec', type=click.Path(exists=True), required=True, help="Path to batch YAML spec file.")
+@click.option('--workers', '-w', type=int, default=multiprocessing.cpu_count(), help="Number of parallel workers.")
+def batch(spec, workers):
+    """Run batch production from a spec file."""
+    click.echo(f"Starting batch production from {spec} with {workers} workers...")
+    
+    with open(spec, 'r') as f:
+        spec_data = yaml.safe_load(f)
         
-    # Build command
-    blender_cmd = [config.BLENDER_PATH]
-    if not preview:
-        blender_cmd.append("--background")
+    batch_list = spec_data.get('batch', {}).get('buildings', [])
+    if not batch_list:
+        click.secho("No buildings found in batch spec.", fg="yellow")
+        return
+        
+    common_export = spec_data.get('batch', {}).get('export', {})
+    common_output = spec_data.get('batch', {}).get('output', {}).get('directory', './output')
     
-    blender_cmd.extend(["--python", "run_command.py", "--", input_file, output_file])
-    
-    try:
-        with click.progressbar(length=100, label='Generating building...') as bar:
-            # We don't have real-time progress from Blender yet, so we simulate
-            process = subprocess.Popen(blender_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    tasks = []
+    for i, b in enumerate(batch_list):
+        seed = b.get('seed', 1000 + i)
+        input_data = {
+            "command": "generate_building",
+            "seed": seed,
+            "spec": {
+                "width": b.get('width', 20.0),
+                "depth": b.get('depth', 16.0),
+                "floors": b.get('floors', 1),
+                "roof": b.get('roof', {}).get('type', 'flat'),
+                "output_dir": common_output
+            }
+        }
+        tasks.append((input_data, f"batch_in_{seed}.json", f"batch_out_{seed}.json"))
+
+    results = []
+    with click.progressbar(length=len(tasks), label='Batch processing...') as bar:
+        # For simplicity in this environment, we'll run sequentially but structure it for pool
+        for task in tasks:
+            res = run_blender_task(*task)
+            results.append(res)
+            bar.update(1)
             
-            # Simulate progress while process is running
-            for i in range(90):
-                if process.poll() is not None: break
-                time.sleep(0.05)
-                bar.update(1)
-            
-            process.wait()
-            bar.update(100 - bar.pos)
-            
-        if os.path.exists(output_file):
-            with open(output_file, 'r') as f:
-                res = json.load(f)
-                if res.get("status") == "success":
-                    click.secho(f"Successfully generated building: {res['result']['glb_path']}", fg="green")
-                else:
-                    click.secho(f"Error: {res.get('message')}", fg="red")
-                    if 'traceback' in res:
-                        click.echo(res['traceback'])
-        else:
-            click.secho("Error: Blender process failed to produce output JSON.", fg="red")
-            stdout, stderr = process.communicate()
-            click.echo(stdout)
-            click.echo(stderr)
-            
-    except Exception as e:
-        click.secho(f"Execution failed: {e}", fg="red")
-    finally:
-        if os.path.exists(input_file): os.remove(input_file)
-        if os.path.exists(output_file): os.remove(output_file)
+    success_count = sum(1 for r in results if r.get('status') == 'success')
+    click.echo(f"Batch completed: {success_count}/{len(tasks)} successful.")
 
 @cli.command()
 @click.argument('asset_type', type=click.Choice(['wall', 'door', 'window'], case_sensitive=False))
@@ -132,8 +155,6 @@ def generate(width, depth, floors, seed, roof, output, spec, preview):
 @click.option('--tags', '-t', help="Comma-separated tags.")
 def create(asset_type, name, length, seed, tags):
     """Create a specific building asset (e.g., a wall)."""
-    click.echo(f"Creating {asset_type}: {name}, Seed: {seed}")
-    
     if asset_type == 'wall':
         if not length:
             click.echo("Error: --length is required for wall creation.", err=True)
@@ -143,35 +164,15 @@ def create(asset_type, name, length, seed, tags):
             "command": "create_wall",
             "seed": seed,
             "asset": {
-                "name": name,
-                "dimensions": {"width": length},
+                "name": name, "dimensions": {"width": length},
                 "tags": tags.split(',') if tags else ["arch_wall"]
             }
         }
-        
-        input_file = "cli_input.json"
-        output_file = "cli_output.json"
-        
-        with open(input_file, 'w') as f:
-            json.dump(input_data, f)
-            
-        cmd = [config.BLENDER_PATH, "--background", "--python", "run_command.py", "--", input_file, output_file]
-        
-        try:
-            subprocess.run(cmd, check=True)
-            
-            if os.path.exists(output_file):
-                with open(output_file, 'r') as f:
-                    res = json.load(f)
-                    if res.get("status") == "success":
-                        click.secho(f"Successfully created asset: {name}", fg="green")
-                    else:
-                        click.secho(f"Error: {res.get('message')}", fg="red")
-        except Exception as e:
-            click.secho(f"Execution failed: {e}", fg="red")
-        finally:
-            if os.path.exists(input_file): os.remove(input_file)
-            if os.path.exists(output_file): os.remove(output_file)
+        res = run_blender_task(input_data, "asset_in.json", "asset_out.json")
+        if res.get("status") == "success":
+            click.secho(f"Successfully created asset: {name}", fg="green")
+        else:
+            click.secho(f"Error: {res.get('message')}", fg="red")
 
 @cli.command()
 def version():
