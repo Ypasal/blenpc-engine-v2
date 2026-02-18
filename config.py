@@ -1,6 +1,7 @@
 import os
 import platform
 import logging
+from typing import Any
 
 """Global configuration and architectural constants for MF v5.1."""
 
@@ -75,3 +76,23 @@ WINDOW_DEFAULT_HEIGHT = 1.2  # meters
 INVENTORY_LOCK_TIMEOUT = 5  # seconds
 INVENTORY_LOCK_POLL_INTERVAL = 0.1  # seconds
 INVENTORY_LOCK_STALE_AGE = 60  # seconds
+
+# NEW v5.1 CONSTANTS
+DEFAULT_ROOF_PITCH = 35.0  # degrees
+TEST_TIMEOUT_DEFAULT = 120  # seconds
+EXPORT_FORMATS_SUPPORTED = ["glb", "blend", "fbx", "obj"]
+
+def safe_import_config():
+    """Helper to handle relative vs absolute imports of config."""
+    try:
+        import config
+        return config
+    except ImportError:
+        try:
+            from . import config
+            return config
+        except ImportError:
+            import sys
+            sys.path.append(PROJECT_ROOT)
+            import config
+            return config

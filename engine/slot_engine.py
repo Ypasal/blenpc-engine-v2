@@ -2,11 +2,11 @@ import json
 import os
 from typing import List, Dict, Optional, Tuple
 
-# Use absolute import from the project root
+# Use safe import from the project root
 try:
-    from ..config import INVENTORY_FILE
-except (ImportError, ValueError):
-    from config import INVENTORY_FILE
+    import config
+except ImportError:
+    from .. import config
 
 def get_aabb(obj) -> Dict[str, List[float]]:
     """Calculate Axis-Aligned Bounding Box for a Blender object."""
@@ -29,10 +29,10 @@ def get_aabb(obj) -> Dict[str, List[float]]:
 
 def find_asset(tags: List[str]) -> Optional[Dict]:
     """Find an asset in the inventory that matches all provided tags."""
-    if not os.path.exists(INVENTORY_FILE):
+    if not os.path.exists(config.INVENTORY_FILE):
         return None
         
-    with open(INVENTORY_FILE, "r") as f:
+    with open(config.INVENTORY_FILE, "r") as f:
         inventory = json.load(f)
         
     for asset_id, asset_data in inventory.get("assets", {}).items():

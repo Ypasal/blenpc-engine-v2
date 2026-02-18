@@ -3,30 +3,27 @@ import os
 import time
 from typing import List, Dict, Optional
 
-# Use absolute import from the project root
+# Use safe import from the project root
 try:
-    from ..config import (
-        INVENTORY_FILE, REGISTRY_DIR,
-        INVENTORY_LOCK_TIMEOUT, INVENTORY_LOCK_POLL_INTERVAL, INVENTORY_LOCK_STALE_AGE
-    )
-except (ImportError, ValueError):
-    from config import (
-        INVENTORY_FILE, REGISTRY_DIR,
-        INVENTORY_LOCK_TIMEOUT, INVENTORY_LOCK_POLL_INTERVAL, INVENTORY_LOCK_STALE_AGE
-    )
+    import config
+except ImportError:
+    from .. import config
     
-LOCK_FILE = os.path.join(REGISTRY_DIR, ".inventory.lock")
+LOCK_FILE = os.path.join(config.REGISTRY_DIR, ".inventory.lock")
 
 class InventoryManager:
     @staticmethod
-    def acquire_lock(timeout=INVENTORY_LOCK_TIMEOUT):
+    def acquire_lock(timeout=None):
         """Acquire a simple file lock for inventory operations."""
+        if timeout is None:
+            timeout = config.INVENTORY_LOCK_TIMEOUT
+            
         start_time = time.time()
         while os.path.exists(LOCK_FILE):
             # CHECK IF LOCK IS STALE
             if os.path.exists(LOCK_FILE):
                 lock_age = time.time() - os.path.getmtime(LOCK_FILE)
-                if lock_age > INVENTORY_LOCK_STALE_AGE:
+                if lock_age > config.INVENTORY_LOCK_STALE_AGE:
                     # Stale lock, remove it
                     try:
                         os.remove(LOCK_FILE)
@@ -35,7 +32,7 @@ class InventoryManager:
             
             if time.time() - start_time > timeout:
                 raise TimeoutError("Could not acquire inventory lock")
-            time.sleep(INVENTORY_LOCK_POLL_INTERVAL)
+            time.sleep(config.INVENTORY_LOCK_POLL_INTERVAL)
         
         with open(LOCK_FILE, "w") as f:
             f.write(str(os.getpid()))
@@ -52,10 +49,10 @@ class InventoryManager:
     @staticmethod
     def find_asset(tags: List[str]) -> Optional[Dict]:
         """Find an asset matching all tags using the registry."""
-        if not os.path.exists(INVENTORY_FILE):
+        if not os.path.exists(config.INVENTORY_FILE):
             return None
             
-        with open(INVENTORY_FILE, "r") as f:
+        with open(config.INVENTORY_FILE, "r") as f:
             inventory = json.load(f)
             
         for asset_name, asset_data in inventory.get("assets", {}).items():
@@ -70,8 +67,8 @@ class InventoryManager:
         InventoryManager.acquire_lock()
         try:
             inventory = {"version": "1.0", "assets": {}}
-            if os.path.exists(INVENTORY_FILE):
-                with open(INVENTORY_FILE, "r") as f:
+            if os.path.exists(config.INVENTORY_FILE):
+                with open(config.INVENTORY_FILE, "r") as f:
                     inventory = json.load(f)
             
             name = asset_data["name"]
@@ -79,9 +76,9 @@ class InventoryManager:
             inventory["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
             
             # Ensure directory exists
-            os.makedirs(REGISTRY_DIR, exist_ok=True)
+            os.makedirs(config.REGISTRY_DIR, exist_ok=True)
             
-            with open(INVENTORY_FILE, "w") as f:
+            with open(config.INVENTORY_FILE, "w") as f:
                 json.dump(inventory, f, indent=2)
         finally:
             InventoryManager.release_lock()

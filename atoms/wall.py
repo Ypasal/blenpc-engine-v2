@@ -12,19 +12,11 @@ except ImportError:
     
 from typing import List, Tuple, Dict, Optional
 
-# Use absolute import from the project root
+# Use safe import from the project root
 try:
-    from ..config import (
-        PHI, STORY_HEIGHT, WALL_THICKNESS_BASE, GRID_UNIT,
-        GOLDEN_RATIO_VARIATION, WINDOW_SILL_HEIGHT_DEFAULT,
-        WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT
-    )
-except (ImportError, ValueError):
-    from config import (
-        PHI, STORY_HEIGHT, WALL_THICKNESS_BASE, GRID_UNIT,
-        GOLDEN_RATIO_VARIATION, WINDOW_SILL_HEIGHT_DEFAULT,
-        WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT
-    )
+    import config
+except ImportError:
+    from .. import config
 
 def make_rng(seed: int, subsystem: str):
     """Create a deterministic RNG for a specific subsystem."""
@@ -36,13 +28,13 @@ def make_rng(seed: int, subsystem: str):
 def golden_split(length: float, rng) -> float:
     """Split a length using the Golden Ratio with slight deterministic variation."""
     # Standard split at 1/PHI or (1 - 1/PHI)
-    split_point = length / PHI
+    split_point = length / config.PHI
     # Add variation based on RNG to avoid perfect repetition while maintaining aesthetics
-    variation = (rng.random() - 0.5) * GOLDEN_RATIO_VARIATION * length
+    variation = (rng.random() - 0.5) * config.GOLDEN_RATIO_VARIATION * length
     final_split = split_point + variation
     
     # Snap to GRID_UNIT for modularity
-    return round(final_split / GRID_UNIT) * GRID_UNIT
+    return round(final_split / config.GRID_UNIT) * config.GRID_UNIT
 
 def check_manifold(bm) -> bool:
     """Verify if the mesh is a manifold using Euler's Formula: V - E + F = 2."""
@@ -99,8 +91,8 @@ def create_engineered_wall(name: str, length: float, seed: int = 0):
     bmesh.ops.create_cube(bm, size=1.0)
     
     # Scale to dimensions
-    thickness = WALL_THICKNESS_BASE
-    height = STORY_HEIGHT
+    thickness = config.WALL_THICKNESS_BASE
+    height = config.STORY_HEIGHT
     
     bm.verts.ensure_lookup_table()
     for v in bm.verts:
@@ -126,8 +118,8 @@ def create_engineered_wall(name: str, length: float, seed: int = 0):
         {
             "id": "main_opening",
             "type": "window_opening",
-            "pos": [primary_slot_x, 0, WINDOW_SILL_HEIGHT_DEFAULT],
-            "size": [WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT]
+            "pos": [primary_slot_x, 0, config.WINDOW_SILL_HEIGHT_DEFAULT],
+            "size": [config.WINDOW_DEFAULT_WIDTH, config.WINDOW_DEFAULT_HEIGHT]
         }
     ]
     
@@ -141,8 +133,11 @@ def create_engineered_wall(name: str, length: float, seed: int = 0):
     
     return obj, slots
 
-def calculate_roof_trig(width: float, pitch_deg: float = 35.0) -> Dict[str, float]:
+def calculate_roof_trig(width: float, pitch_deg: float = None) -> Dict[str, float]:
     """Calculate roof geometry using trigonometry."""
+    if pitch_deg is None:
+        pitch_deg = config.DEFAULT_ROOF_PITCH
+        
     pitch_rad = math.radians(pitch_deg)
     height = (width / 2) * math.tan(pitch_rad)
     slope_length = (width / 2) / math.cos(pitch_rad)
