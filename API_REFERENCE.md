@@ -1,63 +1,89 @@
-# MF v5.1 API Referansı
+# 📚 BlenPC v5.1.1 API Teknik Referansı
 
-Bu doküman, MF v5.1 motorundaki ana sınıfları, fonksiyonları ve parametreleri detaylandırır.
+Bu doküman, **BlenPC v5.1.1 (Expert Edition)** paketinin modüler yapısını, sınıflarını ve fonksiyonlarını teknik düzeyde açıklar.
 
-## 1. Veri Yapıları (`datamodel.py`)
+---
 
-### `BuildingSpec`
-Bina üretim parametrelerini tanımlayan ana sınıftır.
+## 🏗️ 1. Paket Yapısı (Package Hierarchy)
 
-| Parametre | Tip | Varsayılan | Açıklama |
-|-----------|-----|------------|----------|
-| `width` | `float` | - | Binanın X eksenindeki genişliği (metre, min: 5m). |
-| `depth` | `float` | - | Binanın Y eksenindeki derinliği (metre, min: 5m). |
-| `floors` | `int` | `1` | Kat sayısı (1-100). |
-| `seed` | `int` | `0` | Deterministik üretim için rastgelelik anahtarı. |
-| `roof_type` | `RoofType` | `RoofType.FLAT` | Çatı tipi (Enum). |
+BlenPC, modern `src/blenpc` hiyerarşisini kullanır. Tüm modüller `blenpc` ana paketi altında toplanmıştır.
 
-### `RoofType` (Enum)
-Desteklenen çatı tipleri:
-- `RoofType.FLAT`: Düz çatı.
-- `RoofType.HIP`: Kırma çatı.
-- `RoofType.GABLED`: Beşik çatı.
-- `RoofType.SHED`: Tek yöne eğimli çatı.
+| Modül | Dosya Yolu | Sorumluluk |
+| :--- | :--- | :--- |
+| **Config** | `blenpc.config` | Merkezi ayarlar, path yönetimi ve i18n. |
+| **Atoms** | `blenpc.atoms.wall` | Temel geometri üretimi ve manifold kontrolü. |
+| **Inventory** | `blenpc.engine.inventory_manager` | Varlık kaydı, kilitleme ve arama. |
+| **Slots** | `blenpc.engine.slot_engine` | Akıllı yerleştirme ve AABB hesaplama. |
+| **Core** | `blenpc.mf_v5.engine` | Bina üretim boru hattı (pipeline). |
+| **Models** | `blenpc.mf_v5.datamodel` | Veri modelleri ve tip tanımlamaları. |
 
-## 2. Ana Motor (`mf_v5/engine.py`)
+---
 
-### `generate(spec: BuildingSpec, output_dir: Path) -> GenerationOutput`
-Binayı belirtilen özelliklere göre üretir ve GLB olarak dışa aktarır.
+## ⚙️ 2. Yapılandırma (`blenpc.config`)
 
-- **Parametreler:**
-  - `spec`: `BuildingSpec` nesnesi.
-  - `output_dir`: Çıktıların kaydedileceği dizin.
-- **Dönüş Değeri (`GenerationOutput`):**
-  - `floors`: Kat istatistikleri listesi (`FloorOutput`).
-  - `glb_path`: Üretilen GLB dosyasının yolu.
-  - `export_manifest`: Üretim detaylarını içeren JSON dosyasının yolu.
+Merkezi ayarlar bu modülde toplanmıştır.
 
-## 3. Temel Bileşenler (`atoms/wall.py`)
+### Önemli Sabitler
+- **`GRID_UNIT`**: `0.25` (Metre cinsinden modüler ızgara birimi).
+- **`STORY_HEIGHT`**: `3.0` (Standart kat yüksekliği).
+- **`PHI`**: `1.618...` ( BSP bölmeleri için Altın Oran sabiti).
+- **`EXPORT_PRECISION`**: `4` (Koordinat yuvarlama hassasiyeti).
+- **`AUTO_BACKUP_REGISTRY`**: `True` (Her asset kaydında otomatik yedekleme).
 
-### `create_engineered_wall(name: str, length: float, seed: int = 0)`
-Matematiksel olarak yerleştirilmiş slotlara sahip bir duvar nesnesi oluşturur.
+### Fonksiyonlar
+- **`get_blender_path()`**: Windows/Linux/MacOS için Blender yolunu otomatik keşfeder.
+- **`get_settings()`**: Tüm aktif ayarları bir `dict` olarak döndürür.
 
-- **Parametreler:**
+---
+
+## 🧱 3. Geometri Motoru (`blenpc.atoms.wall`)
+
+Temel mesh üretim fonksiyonlarını barındırır.
+
+### Fonksiyonlar
+- **`create_engineered_wall(name, length, seed)`**:
   - `name`: Varlık adı.
   - `length`: Duvar uzunluğu (metre).
-  - `seed`: Slot yerleşimi için seed.
+  - `seed`: Deterministik üretim için anahtar.
+  - **Döndürür**: `(bpy_object, slots_list)`.
+- **`check_manifold(bm)`**: Euler formülü (**V - E + F = 2**) ile geometri doğruluğunu denetler.
+- **`golden_split(length, rng)`**: Uzunluğu Altın Oran'a göre böler ve ızgaraya (`GRID_UNIT`) sabitler.
 
-## 4. Varlık Yönetimi (`engine/inventory_manager.py`)
+---
 
-### `InventoryManager.find_asset(tags: List[str]) -> Optional[Dict]`
-Belirtilen etiketlerin tamamına sahip bir varlığı envanterde arar.
+## 🗃️ 4. Varlık Yönetimi (`blenpc.engine.inventory_manager`)
 
-### `InventoryManager.register_asset(asset_data: Dict)`
-Yeni bir varlığı envantere kaydeder (Dosya kilidi kullanarak).
+JSON tabanlı envanter sistemini yönetir.
 
-## 5. Konfigürasyon Sabitleri (`config.py`)
+### `InventoryManager` Sınıfı
+- **`register_asset(asset_data)`**: Yeni bir varlığı `inventory.json` dosyasına güvenli bir şekilde kaydeder.
+- **`acquire_lock()`**: Dosya çakışmalarını önlemek için güvenli bir dosya kilidi (lock) oluşturur.
+- **`find_asset(tags)`**: Belirtilen etiketlere (tags) sahip ilk varlığı bulur.
 
-Global ayarlar ve limitler:
-- `GRID_UNIT`: Modüler ızgara birimi (0.25m).
-- `STORY_HEIGHT`: Kat yüksekliği (3.0m).
-- `WALL_THICKNESS_BASE`: Temel duvar kalınlığı (0.2m).
-- `GOLDEN_RATIO_VARIATION`: Altın oran sapma payı (0.04).
-- `INVENTORY_LOCK_TIMEOUT`: Envanter kilit zaman aşımı (5s).
+---
+
+## 🏠 5. Bina Üretimi (`blenpc.mf_v5.engine`)
+
+En üst seviye üretim mantığını yönetir.
+
+### Fonksiyonlar
+- **`generate(spec, output_dir)`**:
+  - `spec`: `BuildingSpec` nesnesi.
+  - `output_dir`: Çıktı dizini.
+  - **Döndürür**: `GenerationOutput` nesnesi (GLB yolu ve manifest bilgisi ile).
+
+---
+
+## 📊 6. Veri Modelleri (`blenpc.mf_v5.datamodel`)
+
+### `BuildingSpec` (Dataclass)
+Bina üretim parametrelerini tanımlar:
+- `width`: Genişlik.
+- `depth`: Derinlik.
+- `floors`: Kat sayısı.
+- `seed`: Üretim anahtarı.
+- `roof_type`: `RoofType` (FLAT, GABLED, HIP, SHED).
+
+---
+
+*Teknik sorularınız için lütfen [GitHub Issues](https://github.com/ozyorionlast-cloud/blenpc-5.0-optimized/issues) üzerinden iletişime geçin.*
