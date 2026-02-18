@@ -1,105 +1,67 @@
-# 🏗️ BlenPC v5.1.1 (Expert Edition)
+# 🏗️ BlenPC v5.1.1 (Optimized)
 
-BlenPC, **Blender 5.0.1+** ve modern oyun motorları (Godot, Unity, Unreal) için tasarlanmış, **uzman kadro disiplinleri** ile modernize edilmiş profesyonel bir prosedürel bina ve varlık üretim motorudur. 
-
-Proje, geleneksel mesh üretiminin ötesine geçerek; deterministik matematiksel kurallar, akıllı slot yerleştirme sistemleri ve tam otomatize edilmiş bir komut satırı arayüzü (CLI) sunar.
+BlenPC, **Blender 5.0.1+** ve **Godot Engine** için tasarlanmış, mühendislik standartlarında bir prosedürel bina ve varlık üretim motorudur. Deterministik matematiksel kurallar, akıllı slot yerleştirme ve JSON komut sistemi ile çalışır.
 
 ---
 
-## 🏛️ Uzman Mimari (Expert Architecture)
+## 🏛️ Mimari Yapı
 
-Bu sürüm, 10 farklı uzman disiplinin (Software Architect, DevOps, QA, UX vb.) ortak kararlarıyla **`src/` tabanlı modern bir paket yapısına** kavuşturulmuştur.
+Proje, katmanlı ve modüler bir yapıda organize edilmiştir:
 
-### 📂 Proje Yapısı ve Organizasyonu
-| Dizin / Dosya | Sorumluluk Alanı | Uzman Disiplin |
-| :--- | :--- | :--- |
-| `src/blenpc/` | Ana Kaynak Kod (Package Root) | Software Architect |
-| `├── atoms/` | Temel Yapı Taşları (Wall, Window, Door) | Geometry Specialist |
-| `├── engine/` | Envanter ve Slot Yerleştirme Motoru | Data Scientist |
-| `├── mf_v5/` | Prosedürel Bina Üretim Mantığı | Pipeline Specialist |
-| `├── config.py` | Merkezi Ayarlar ve Path Yönetimi | DevOps Engineer |
-| `└── run_command.py` | Blender Bridge ve Komut Köprüsü | Systems Engineer |
-| `blenpc.py` | Modern Click Tabanlı CLI Giriş Noktası | UX Designer |
-| `_library/` | Üretilen `.blend` Varlık Kütüphanesi | Asset Manager |
-| `_registry/` | JSON Tabanlı Varlık Veritabanı (Inventory) | Database Specialist |
-| `output/` | Final Çıktılar (GLB, FBX, Manifest) | Export Specialist |
-
----
-
-## 🚀 Temel Özellikler ve Yenilikler
-
-### 1. Deterministik Üretim (Seed-Based)
-Aynı `seed` değeri, farklı zamanlarda veya makinelerde çalıştırılsa bile **birebir aynı** kat planını ve geometriyi üretir. Bu, takım çalışmalarında ve versiyon kontrolünde tam tutarlılık sağlar.
-
-### 2. Akıllı Slot ve Envanter Sistemi
-Her üretilen varlık (örneğin bir duvar), üzerinde matematiksel olarak hesaplanmış **bağlantı noktaları (slots)** barındırır. Bu slotlar, kapı ve pencerelerin otomatik ve hatasız yerleştirilmesini sağlar.
-
-### 3. Windows 11 & Blender 5.0.1 Optimizasyonu
-- **Otomatik Keşif:** Blender yolu, Windows Registry ve standart kurulum dizinlerinde otomatik olarak bulunur.
-- **Path Uyumluluğu:** Tüm dosya yolları `%APPDATA%` ve Windows dosya sistemi standartlarına tam uyumludur.
-
-### 4. Manifold Geometri Garantisi
-Euler formülü (**V - E + F = 2**) kullanılarak her üretilen mesh'in manifold (kapalı ve hatasız) olduğu matematiksel olarak doğrulanır.
+### 📂 Klasör Organizasyonu
+| Dizin / Dosya | Sorumluluk Alanı |
+| :--- | :--- |
+| `src/blenpc/` | Ana Paket (Source) |
+| `├── atoms/` | Temel Yapı Taşları (Wall, Window, Door) |
+| `├── engine/` | Envanter ve Slot Yerleştirme Motoru |
+| `├── mf_v5/` | Prosedürel Bina Üretim Mantığı |
+| `├── config.py` | Merkezi Ayarlar ve Path Yönetimi |
+| `├── cli.py` | Komut Satırı Arayüzü (CLI) |
+| `└── run_command.py` | Blender Bridge Script |
+| `_library/` | Üretilen `.blend` Varlık Kütüphanesi |
+| `_registry/` | JSON Tabanlı Varlık Envanteri (Inventory) |
+| `output/` | Final Çıktılar (GLB, Manifest) |
 
 ---
 
-## 💻 CLI Kullanım Rehberi
+## 🚀 Temel Özellikler
 
-BlenPC, `blenpc.py` üzerinden modern ve güçlü bir komut satırı arayüzü sunar.
+- **Deterministik Üretim:** Aynı `seed` değeri ile her zaman aynı binayı üretir.
+- **Slot Sistemi:** Varlıklar üzerinde matematiksel olarak hesaplanmış bağlantı noktaları.
+- **Godot Uyumluluğu:** Otomatik collider ve manifest üretimi.
+- **Manifold Geometri:** Euler formülü (**V - E + F = 2**) ile geometri doğrulaması.
+- **Windows 11 Desteği:** Blender yolu otomatik keşfi ve path optimizasyonu.
 
-### 🏢 Bina Üretimi (Generate)
+---
+
+## 💻 CLI Kullanımı
+
+BlenPC, JSON komut sistemi üzerinden kontrol edilir.
+
+### 🏢 Bina Üretimi
 ```bash
-# Doğrudan parametrelerle üretim
-python blenpc.py generate --width 25 --depth 18 --floors 3 --seed 2026 --roof hip
-
-# YAML Spec dosyasından üretim (Önerilen)
-python blenpc.py generate --spec mansion.yaml
+# JSON parametreleri ile üretim
+python src/blenpc/cli.py generate --width 20 --depth 16 --floors 3 --seed 42 --roof gabled
 ```
 
-### 📦 Toplu Üretim (Batch)
-Yüzlerce binayı tek bir komutla ve paralel işleme desteğiyle üretebilirsiniz:
+### 📦 Varlık Kaydı ve Denetleme
 ```bash
-python blenpc.py batch --spec city_block.yaml
-```
-
-### 🔍 Denetleme ve Doğrulama (Inspect & Validate)
-```bash
-# GLB dosyasını analiz et
-python blenpc.py inspect output/MyBuilding.glb
-
-# Spec dosyasını veya Registry'yi doğrula
-python blenpc.py validate --spec mansion.yaml
-python blenpc.py validate --registry
+python src/blenpc/cli.py registry list
+python src/blenpc/cli.py inspect output/Building.glb
 ```
 
 ---
 
-## 🔧 Uzman Ayarları (`config.py`)
-
-Proje, `src/blenpc/config.py` üzerinden 10+ kritik ayar ile özelleştirilebilir:
-- **`I18N_LANGUAGE`:** Çoklu dil desteği (Varsayılan: `tr`).
-- **`EXPORT_PRECISION`:** Koordinat hassasiyeti (Hafif ve tutarlı GLB'ler için).
-- **`AUTO_BACKUP_REGISTRY`:** Her asset kaydında otomatik yedekleme.
-- **`STRICT_VALIDATION`:** Üretim öncesi sıkı geometri kontrolü.
-
----
-
-## 🛠️ Kurulum ve Gereksinimler
+## 🔧 Kurulum
 
 1. **Blender 5.0.1+** yüklü olduğundan emin olun.
-2. Repoyu klonlayın:
+2. Repoyu klonlayın ve bağımlılıkları yükleyin:
    ```bash
    git clone https://github.com/ozyorionlast-cloud/blenpc-5.0-optimized
-   ```
-3. Bağımlılıkları yükleyin:
-   ```bash
    pip install -r requirements.txt
    ```
 
 ---
 
-## 📄 Lisans ve Katkıda Bulunma
-Bu proje **MIT Lisansı** ile korunmaktadır. Uzman kadro tarafından geliştirilen bu sistem, topluluk katkılarına açıktır.
-
----
-*BlenPC v5.1.1 - Geleceğin Prosedürel Mimarisi için Bugünün Mühendisliği.*
+## 📄 Lisans
+MIT License.
