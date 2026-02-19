@@ -1,6 +1,16 @@
 # 🏗️ BlenPC v5.1.1 (Optimized)
 
-BlenPC, **Blender 5.0.1+** ve **Godot Engine** için tasarlanmış, mühendislik standartlarında bir prosedürel bina ve varlık üretim motorudur. Deterministik matematiksel kurallar, akıllı slot yerleştirme ve JSON komut sistemi ile çalışır.
+BlenPC, **Blender 5.0.1+** ve **Godot Engine** için tasarlanmış, mühendislik standartlarında bir prosedürel bina ve varlık üretim motorudur. Bu sürüm, **Engine V2** ile tamamen modernize edilmiş, immutable ve deterministik bir çekirdek yapıya kavuşmuştur.
+
+---
+
+## 🚀 Engine V2 (Yeni Nesil Çekirdek)
+
+Engine V2, projenin kalbidir ve aşağıdaki prensiplerle geliştirilmiştir:
+- **Immutability:** Tüm state yapısı değişmezdir.
+- **Purity:** Tüm fonksiyonlar yan etkisizdir (pure).
+- **Determinism:** Aynı girdi her zaman aynı çıktıyı üretir.
+- **Blender Independence:** Blender olmadan çalışabilir, test edilebilir.
 
 ---
 
@@ -11,57 +21,48 @@ Proje, katmanlı ve modüler bir yapıda organize edilmiştir:
 ### 📂 Klasör Organizasyonu
 | Dizin / Dosya | Sorumluluk Alanı |
 | :--- | :--- |
-| `src/blenpc/` | Ana Paket (Source) |
-| `├── atoms/` | Temel Yapı Taşları (Wall, Window, Door) |
-| `├── engine/` | Envanter ve Slot Yerleştirme Motoru |
-| `├── mf_v5/` | Prosedürel Bina Üretim Mantığı |
-| `├── config.py` | Merkezi Ayarlar ve Path Yönetimi |
-| `├── cli.py` | Komut Satırı Arayüzü (CLI) |
-| `└── run_command.py` | Blender Bridge Script |
+| `src/blenpc/engine_v2/` | **Yeni Nesil Engine (Tavsiye Edilen)** |
+| `├── core/` | Çekirdek modüller (Grid, Collision, Room Detection vb.) |
+| `└── tests/` | Engine V2 test suite (165+ test) |
+| `src/blenpc/engine/` | Eski nesil engine (Legacy) |
+| `src/blenpc/atoms/` | Temel Yapı Taşları (Wall, Window, Door) |
+| `src/blenpc/mf_v5/` | Prosedürel Bina Üretim Mantığı |
+| `docs/` | Proje dokümantasyonu ve FAZ raporları |
 | `_library/` | Üretilen `.blend` Varlık Kütüphanesi |
 | `_registry/` | JSON Tabanlı Varlık Envanteri (Inventory) |
 | `output/` | Final Çıktılar (GLB, Manifest) |
 
 ---
 
-## 🚀 Temel Özellikler
+## 💻 Kullanım
 
-- **Deterministik Üretim:** Aynı `seed` değeri ile her zaman aynı binayı üretir.
-- **Slot Sistemi:** Varlıklar üzerinde matematiksel olarak hesaplanmış bağlantı noktaları.
-- **Godot Uyumluluğu:** Otomatik collider ve manifest üretimi.
-- **Manifold Geometri:** Euler formülü (**V - E + F = 2**) ile geometri doğrulaması.
-- **Windows 11 Desteği:** Blender yolu otomatik keşfi ve path optimizasyonu.
-
----
-
-## 💻 CLI Kullanımı
-
-BlenPC, JSON komut sistemi üzerinden kontrol edilir.
-
-### 🏢 Bina Üretimi
+### Testleri Çalıştırma
+Engine V2'nin stabilitesini doğrulamak için:
 ```bash
-# JSON parametreleri ile üretim
-python src/blenpc/cli.py generate --width 20 --depth 16 --floors 3 --seed 42 --roof gabled
+pytest src/blenpc/engine_v2/tests/ -v
 ```
 
-### 📦 Varlık Kaydı ve Denetleme
-```bash
-python src/blenpc/cli.py registry list
-python src/blenpc/cli.py inspect output/Building.glb
+### Hızlı Başlangıç (Engine V2)
+```python
+from blenpc.engine_v2.core import Engine
+
+engine = Engine()
+engine.place("wall_01", frozenset({(0, 0, 0), (1, 0, 0)}))
+print(engine.state.is_occupied((0, 0, 0))) # True
 ```
 
 ---
 
-## 🔧 Kurulum
-
-1. **Blender 5.0.1+** yüklü olduğundan emin olun.
-2. Repoyu klonlayın ve bağımlılıkları yükleyin:
-   ```bash
-   git clone https://github.com/ozyorionlast-cloud/blenpc-5.0-optimized
-   pip install -r requirements.txt
-   ```
+## 📚 Dokümantasyon
+Detaylı API ve mimari bilgileri için aşağıdaki dosyalara göz atabilirsiniz:
+- [Engine V2 Detaylı README](src/blenpc/engine_v2/README.md)
+- [FAZ 8 Tamamlama Raporu](docs/faz_8/FAZ_8_COMPLETION_REPORT.md)
+- [Final Teslimat Özeti](docs/faz_8/FINAL_DELIVERY_SUMMARY.md)
 
 ---
 
 ## 📄 Lisans
 MIT License.
+
+---
+**Durum:** FAZ 8 Tamamlandı. Engine V2 Production-Ready. ✅
