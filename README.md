@@ -42,7 +42,20 @@ Engine V2'nin stabilitesini doğrulamak için:
 pytest src/blenpc/engine_v2/tests/ -v
 ```
 
-### Hızlı Başlangıç (Engine V2)
+### 🖥️ CLI V2 Kullanımı
+Yeni nesil CLI ile analiz ve komut çalıştırma:
+```bash
+# Performans testi
+python src/blenpc/cli_v2.py bench
+
+# Komut dosyası çalıştırma
+python src/blenpc/cli_v2.py run commands.json -o state.json
+
+# Mekansal analiz (Oda tespiti vb.)
+python src/blenpc/cli_v2.py analyze --spec state.json
+```
+
+### Hızlı Başlangıç (Python API)
 ```python
 from blenpc.engine_v2.core import Engine
 
